@@ -1,15 +1,14 @@
 import sys
 sys.path.append("./live_tools")
-import ccxt
 import ta
-import pandas as pd
 from utilities.perp_bitget import PerpBitget
-from utilities.custom_indicators import get_n_columns
 from utilities.var import ValueAtRisk
 from datetime import datetime
 import time
 import json
 import copy
+from ta.momentum import RSIIndicator, StochasticOscillator
+from ta.trend import MACD
 
 now = datetime.now()
 current_time = now.strftime("%d/%m/%Y %H:%M:%S")
@@ -22,8 +21,8 @@ secret = json.load(f)
 f.close()
 
 account_to_select = "bitget_exemple"
-production = True
-timeframe = "1h"
+production = False
+timeframe = "4h"
 type = ["long", "short"]
 leverage = 1
 max_var = 1
@@ -34,85 +33,183 @@ params_coin = {
         "wallet_exposure": 0.05,
         "bb_window": 100,
         "bb_std": 2.25,
-        "long_ma_window": 500
+        "long_ma_window": 500,
+        "rsi_window": 14,
+        "macd_short_window": 12,
+        "macd_long_window": 26,
+        "macd_signal_window": 9,
+        "stoch_rsi_window": 14,
+        "stoch_rsi_smooth_k": 3,
+        "stoch_rsi_smooth_d": 3
     },
     "AAVE/USDT:USDT": {
         "wallet_exposure": 0.05,
         "bb_window": 100,
-        "bb_std": 1,
-        "long_ma_window": 500
+        "bb_std": 2.25,
+        "long_ma_window": 500,
+        "rsi_window": 14,
+        "macd_short_window": 12,
+        "macd_long_window": 26,
+        "macd_signal_window": 9,
+        "stoch_rsi_window": 14,
+        "stoch_rsi_smooth_k": 3,
+        "stoch_rsi_smooth_d": 3
     },
     "APT/USDT:USDT": {
         "wallet_exposure": 0.05,
         "bb_window": 100,
-        "bb_std": 1,
-        "long_ma_window": 500
+        "bb_std": 2.25,
+        "long_ma_window": 500,
+        "rsi_window": 14,
+        "macd_short_window": 12,
+        "macd_long_window": 26,
+        "macd_signal_window": 9,
+        "stoch_rsi_window": 14,
+        "stoch_rsi_smooth_k": 3,
+        "stoch_rsi_smooth_d": 3
     },
     "AVAX/USDT:USDT": {
         "wallet_exposure": 0.05,
         "bb_window": 100,
-        "bb_std": 1,
-        "long_ma_window": 500
+        "bb_std": 2.25,
+        "long_ma_window": 500,
+        "rsi_window": 14,
+        "macd_short_window": 12,
+        "macd_long_window": 26,
+        "macd_signal_window": 9,
+        "stoch_rsi_window": 14,
+        "stoch_rsi_smooth_k": 3,
+        "stoch_rsi_smooth_d": 3
     },
     "DOT/USDT:USDT": {
         "wallet_exposure": 0.05,
         "bb_window": 100,
-        "bb_std": 1,
-        "long_ma_window": 500
+        "bb_std": 2.25,
+        "long_ma_window": 500,
+        "rsi_window": 14,
+        "macd_short_window": 12,
+        "macd_long_window": 26,
+        "macd_signal_window": 9,
+        "stoch_rsi_window": 14,
+        "stoch_rsi_smooth_k": 3,
+        "stoch_rsi_smooth_d": 3
     },
     "ETH/USDT:USDT": {
         "wallet_exposure": 0.05,
         "bb_window": 100,
-        "bb_std": 1,
-        "long_ma_window": 500
+        "bb_std": 2.25,
+        "long_ma_window": 500,
+        "rsi_window": 14,
+        "macd_short_window": 12,
+        "macd_long_window": 26,
+        "macd_signal_window": 9,
+        "stoch_rsi_window": 14,
+        "stoch_rsi_smooth_k": 3,
+        "stoch_rsi_smooth_d": 3
     },
     "FTM/USDT:USDT": {
         "wallet_exposure": 0.05,
         "bb_window": 100,
-        "bb_std": 1,
-        "long_ma_window": 500
+        "bb_std": 2.25,
+        "long_ma_window": 500,
+        "rsi_window": 14,
+        "macd_short_window": 12,
+        "macd_long_window": 26,
+        "macd_signal_window": 9,
+        "stoch_rsi_window": 14,
+        "stoch_rsi_smooth_k": 3,
+        "stoch_rsi_smooth_d": 3
     },
     "BNB/USDT:USDT": {
         "wallet_exposure": 0.05,
         "bb_window": 100,
-        "bb_std": 1,
-        "long_ma_window": 500
+        "bb_std": 2.25,
+        "long_ma_window": 500,
+        "rsi_window": 14,
+        "macd_short_window": 12,
+        "macd_long_window": 26,
+        "macd_signal_window": 9,
+        "stoch_rsi_window": 14,
+        "stoch_rsi_smooth_k": 3,
+        "stoch_rsi_smooth_d": 3
     },
     "GMT/USDT:USDT": {
         "wallet_exposure": 0.05,
         "bb_window": 100,
-        "bb_std": 1,
-        "long_ma_window": 500
+        "bb_std": 2.25,
+        "long_ma_window": 500,
+        "rsi_window": 14,
+        "macd_short_window": 12,
+        "macd_long_window": 26,
+        "macd_signal_window": 9,
+        "stoch_rsi_window": 14,
+        "stoch_rsi_smooth_k": 3,
+        "stoch_rsi_smooth_d": 3
     },
     "GRT/USDT:USDT": {
         "wallet_exposure": 0.05,
         "bb_window": 100,
-        "bb_std": 1,
-        "long_ma_window": 500
+        "bb_std": 2.25,
+        "long_ma_window": 500,
+        "rsi_window": 14,
+        "macd_short_window": 12,
+        "macd_long_window": 26,
+        "macd_signal_window": 9,
+        "stoch_rsi_window": 14,
+        "stoch_rsi_smooth_k": 3,
+        "stoch_rsi_smooth_d": 3
     },
     "MANA/USDT:USDT": {
         "wallet_exposure": 0.05,
         "bb_window": 100,
-        "bb_std": 1,
-        "long_ma_window": 500
+        "bb_std": 2.25,
+        "long_ma_window": 500,
+        "rsi_window": 14,
+        "macd_short_window": 12,
+        "macd_long_window": 26,
+        "macd_signal_window": 9,
+        "stoch_rsi_window": 14,
+        "stoch_rsi_smooth_k": 3,
+        "stoch_rsi_smooth_d": 3
     },
     "MATIC/USDT:USDT": {
         "wallet_exposure": 0.05,
         "bb_window": 100,
-        "bb_std": 1,
-        "long_ma_window": 500
+        "bb_std": 2.25,
+        "long_ma_window": 500,
+        "rsi_window": 14,
+        "macd_short_window": 12,
+        "macd_long_window": 26,
+        "macd_signal_window": 9,
+        "stoch_rsi_window": 14,
+        "stoch_rsi_smooth_k": 3,
+        "stoch_rsi_smooth_d": 3
     },
     "NEAR/USDT:USDT": {
         "wallet_exposure": 0.05,
         "bb_window": 100,
-        "bb_std": 1,
-        "long_ma_window": 500
+        "bb_std": 2.25,
+        "long_ma_window": 500,
+        "rsi_window": 14,
+        "macd_short_window": 12,
+        "macd_long_window": 26,
+        "macd_signal_window": 9,
+        "stoch_rsi_window": 14,
+        "stoch_rsi_smooth_k": 3,
+        "stoch_rsi_smooth_d": 3
     },
     "SOL/USDT:USDT": {
         "wallet_exposure": 0.05,
         "bb_window": 100,
-        "bb_std": 1,
-        "long_ma_window": 500
+        "bb_std": 2.25,
+        "long_ma_window": 500,
+        "rsi_window": 14,
+        "macd_short_window": 12,
+        "macd_long_window": 26,
+        "macd_signal_window": 9,
+        "stoch_rsi_window": 14,
+        "stoch_rsi_smooth_k": 3,
+        "stoch_rsi_smooth_d": 3
     },
 }
 
@@ -121,29 +218,49 @@ def open_long(row):
         row['n1_close'] < row['n1_higher_band'] 
         and (row['close'] > row['higher_band']) 
         and (row['close'] > row['long_ma'])
+        # Add conditions for new indicators
+        and (row['rsi'] < 30)
+        and (row['macd_diff'] > 0)
+        and (row['stoch_rsi_k'] < 20)
     ):
         return True
     else:
         return False
 
 def close_long(row):
-    if (row['close'] < row['ma_band']):
+    if (
+        row['close'] < row['ma_band']
+        # Add conditions for new indicators
+        or (row['rsi'] > 70)
+        or (row['macd_diff'] < 0)
+        or (row['stoch_rsi_k'] > 80)
+    ):
         return True
     else:
         return False
 
 def open_short(row):
     if (
-        row['n1_close'] > row['n1_lower_band'] 
-        and (row['close'] < row['lower_band']) 
-        and (row['close'] < row['long_ma'])        
+        row['n1_close'] > row['n1_lower_band']
+        and (row['close'] < row['lower_band'])
+        and (row['close'] < row['long_ma'])
+        # Add conditions for new indicators
+        and (row['rsi'] > 70)
+        and (row['macd_diff'] < 0)
+        and (row['stoch_rsi_k'] > 80)
     ):
         return True
     else:
         return False
 
 def close_short(row):
-    if (row['close'] > row['ma_band']):
+    if (
+        row['close'] > row['ma_band']
+        # Add conditions for new indicators
+        or (row['rsi'] < 30)
+        or (row['macd_diff'] > 0)
+        or (row['stoch_rsi_k'] < 20)
+    ):
         return True
     else:
         return False
@@ -181,6 +298,20 @@ for pair in df_list:
     df["n1_higher_band"] = df["higher_band"].shift(1)
 
     df['iloc'] = range(len(df))
+    # Calculate RSI
+    rsi_indicator = RSIIndicator(df["close"], params["rsi_window"])
+    df["rsi"] = rsi_indicator.rsi()
+
+    # Calculate MACD
+    macd_indicator = MACD(df["close"], params["macd_short_window"], params["macd_long_window"], params["macd_signal_window"])
+    df["macd"] = macd_indicator.macd()
+    df["macd_signal"] = macd_indicator.macd_signal()
+    df["macd_diff"] = macd_indicator.macd_diff()
+
+    # Calculate Stochastic RSI
+    stoch_rsi_indicator = StochasticOscillator(df["close"], params["stoch_rsi_window"], params["stoch_rsi_smooth_k"], params["stoch_rsi_smooth_d"])
+    df["stoch_rsi_k"] = stoch_rsi_indicator.stoch_k()
+    df["stoch_rsi_d"] = stoch_rsi_indicator.stoch_d()
 
 print("Indicators loaded 100%")
 
@@ -316,4 +447,3 @@ for pair in df_list:
 now = datetime.now()
 current_time = now.strftime("%d/%m/%Y %H:%M:%S")
 print("--- End Execution Time :", current_time, "---")
-
